@@ -10,13 +10,13 @@ namespace Chimply.ViewModels;
 public partial class MainWindowViewModel : ViewModelBase
 {
     private readonly INetworkScanner _scanner = new NetworkScanner();
-    private readonly HashSet<string> _previouslySeenIps = [];
-    private CancellationTokenSource? _cts;
+    private readonly Dictionary<string, ScanResult> _resultsByIp = new();
     private readonly DispatcherTimer _timer;
+    private CancellationTokenSource? _cts;
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(ScanCommand))]
-    private string _subnetInput = "192.168.1.0/24";
+    private string _subnetInput = SubnetDetector.DetectLocalSubnet() ?? "192.168.1.0/24";
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(ScanCommand))]
@@ -32,11 +32,11 @@ public partial class MainWindowViewModel : ViewModelBase
 
     public MainWindowViewModel()
     {
-        _timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
+        _timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(30) };
         _timer.Tick += (_, _) =>
         {
             foreach (var result in Results)
-                result.UpdateTimeSinceDiscovery();
+                result.UpdateTimeDisplay();
         };
         _timer.Start();
     }
@@ -47,7 +47,6 @@ public partial class MainWindowViewModel : ViewModelBase
     [RelayCommand(CanExecute = nameof(CanScan))]
     private async Task ScanAsync()
     {
-        Results.Clear();
         HostsFound = 0;
         Progress = 0;
         IsScanning = true;
@@ -81,16 +80,41 @@ public partial class MainWindowViewModel : ViewModelBase
 
                 if (result.Status == "Up")
                 {
-                    result.DiscoveredAt = DateTime.UtcNow;
-                    result.UpdateTimeSinceDiscovery();
                     currentScanIps.Add(result.IpAddress);
 
-                    if (_previouslySeenIps.Contains(result.IpAddress))
-                        result.Status = "Up";
-                    else
-                        result.Status = "New";
+                    if (_resultsByIp.TryGetValue(result.IpAddress, out var existing))
+                    {
+                        // Update existing row in-place
+                        existing.Hostname = result.Hostname;
+                        existing.MacAddress = result.MacAddress;
+                        existing.RoundTripTime = result.RoundTripTime;
+                        existing.OpenPorts = result.OpenPorts;
+                        existing.BuildPortEntries();
 
-                    Results.Add(result);
+                        var previousStatus = existing.Status;
+                        if (previousStatus == "New")
+                        {
+                            // New → Up: no timestamp update
+                            existing.Status = "Up";
+                        }
+                        else if (previousStatus == "Down")
+                        {
+                            // Down → Up: update timestamp
+                            existing.Status = "Up";
+                            existing.SetTimestamp();
+                        }
+                        // Up → Up: no change
+                    }
+                    else
+                    {
+                        // First time seeing this host
+                        result.Status = "New";
+                        result.SetTimestamp();
+                        result.BuildPortEntries();
+                        Results.Add(result);
+                        _resultsByIp[result.IpAddress] = result;
+                    }
+
                     HostsFound++;
                 }
 
@@ -101,7 +125,21 @@ public partial class MainWindowViewModel : ViewModelBase
         try
         {
             await Task.Run(() => _scanner.ScanAsync(SubnetInput, reportProgress, _cts.Token));
-            StatusText = $"Scan complete. {HostsFound} host(s) found.";
+
+            // Mark hosts not seen in this scan as Down
+            foreach (var entry in _resultsByIp.Values)
+            {
+                if (!currentScanIps.Contains(entry.IpAddress) && entry.Status is "Up" or "New")
+                {
+                    entry.Status = "Down";
+                    entry.RoundTripTime = null;
+                    entry.OpenPorts = [];
+                    entry.BuildPortEntries();
+                    entry.SetTimestamp();
+                }
+            }
+
+            StatusText = $"Scan complete. {HostsFound} host(s) up.";
         }
         catch (OperationCanceledException)
         {
@@ -117,10 +155,6 @@ public partial class MainWindowViewModel : ViewModelBase
         }
         finally
         {
-            // Remember all IPs seen this scan for next time
-            foreach (var ip in currentScanIps)
-                _previouslySeenIps.Add(ip);
-
             IsScanning = false;
             _cts?.Dispose();
             _cts = null;

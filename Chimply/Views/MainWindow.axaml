@@ -1,15 +1,17 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:Chimply.ViewModels"
+        xmlns:models="using:Chimply.Models"
         xmlns:converters="using:Chimply.Converters"
         x:Class="Chimply.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
         Title="Chimply - Network Scanner"
-        Width="900" Height="600"
-        MinWidth="700" MinHeight="400">
+        Width="1000" Height="600"
+        MinWidth="800" MinHeight="400">
 
     <Window.Resources>
         <converters:StatusToBrushConverter x:Key="StatusToBrush" />
+        <converters:StringToBrushConverter x:Key="StringToBrush" />
     </Window.Resources>
 
     <DockPanel Margin="10">
@@ -58,6 +60,7 @@
             <DataGrid.Columns>
                 <DataGridTextColumn Header="IP Address"
                                     Binding="{Binding IpAddress}"
+                                    CustomSortComparer="{x:Static converters:IpAddressComparer.Instance}"
                                     Width="150" />
                 <DataGridTextColumn Header="Hostname"
                                     Binding="{Binding Hostname}"
@@ -68,9 +71,42 @@
                 <DataGridTextColumn Header="MAC Address"
                                     Binding="{Binding MacAddress}"
                                     Width="150" />
-                <DataGridTextColumn Header="First Seen"
-                                    Binding="{Binding TimeSinceDiscovery}"
-                                    Width="110" />
+                <DataGridTemplateColumn Header="Open Ports" Width="150">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate x:DataType="models:ScanResult">
+                            <ItemsControl ItemsSource="{Binding PortEntries}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <StackPanel Orientation="Horizontal" Spacing="4" />
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="models:PortEntry">
+                                        <Button Content="{Binding Port}"
+                                                Command="{Binding OpenCommand}"
+                                                Padding="6,2"
+                                                MinWidth="0"
+                                                FontSize="11"
+                                                Background="Transparent"
+                                                Foreground="#64B5F6"
+                                                BorderThickness="0"
+                                                Cursor="Hand" />
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTemplateColumn Header="First Seen" Width="130">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate x:DataType="models:ScanResult">
+                            <TextBlock Text="{Binding TimeSinceDiscovery}"
+                                       Foreground="{Binding TimeSinceColor, Converter={StaticResource StringToBrush}}"
+                                       VerticalAlignment="Center"
+                                       Margin="4,0" />
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
                 <DataGridTemplateColumn Header="Status" Width="80">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>

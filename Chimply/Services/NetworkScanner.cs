@@ -8,6 +8,7 @@ namespace Chimply.Services;
 public class NetworkScanner : INetworkScanner
 {
     private static readonly int[] TcpFallbackPorts = [80, 443, 22, 445, 3389];
+    private static readonly int[] DisplayPorts = [21, 22, 80, 443];
     private const int MaxConcurrency = 50;
     private const int PingTimeoutMs = 1000;
     private const int TcpTimeoutMs = 500;
@@ -47,13 +48,13 @@ public class NetworkScanner : INetworkScanner
                 // ICMP may fail due to permissions on Linux — fall through to TCP
             }
 
-            // TCP fallback if ping failed
+            // TCP fallback if ping failed — connection refused still means host is alive
             if (!isUp)
             {
                 foreach (var port in TcpFallbackPorts)
                 {
                     cancellationToken.ThrowIfCancellationRequested();
-                    if (await TryTcpConnectAsync(ip, port, cancellationToken))
+                    if (await IsHostAliveOnPortAsync(ip, port, cancellationToken))
                     {
                         isUp = true;
                         break;
@@ -63,9 +64,15 @@ public class NetworkScanner : INetworkScanner
 
             result.Status = isUp ? "Up" : "Down";
 
-            // Reverse DNS (best-effort)
             if (isUp)
             {
+                // Port scan — check common ports in parallel (open = accepting connections)
+                var portTasks = DisplayPorts.Select(async port =>
+                    await IsPortOpenAsync(ip, port, cancellationToken) ? port : -1);
+                var portResults = await Task.WhenAll(portTasks);
+                result.OpenPorts = portResults.Where(p => p > 0).OrderBy(p => p).ToList();
+
+                // Reverse DNS (best-effort)
                 try
                 {
                     var hostEntry = await Dns.GetHostEntryAsync(ip);
@@ -75,11 +82,8 @@ public class NetworkScanner : INetworkScanner
                 {
                     // Ignore DNS resolution failures
                 }
-            }
 
-            // MAC address lookup (best-effort)
-            if (isUp)
-            {
+                // MAC address lookup (best-effort)
                 result.MacAddress = MacAddressResolver.Resolve(ip) ?? string.Empty;
             }
 
@@ -91,7 +95,8 @@ public class NetworkScanner : INetworkScanner
         }
     }
 
-    private static async Task<bool> TryTcpConnectAsync(IPAddress ip, int port, CancellationToken cancellationToken)
+    /// <summary>Returns true if the host responds at all (connect or connection refused).</summary>
+    private static async Task<bool> IsHostAliveOnPortAsync(IPAddress ip, int port, CancellationToken cancellationToken)
     {
         try
         {
@@ -103,11 +108,32 @@ public class NetworkScanner : INetworkScanner
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
-            throw; // Propagate user cancellation
+            throw;
         }
         catch (SocketException ex) when (ex.SocketErrorCode == SocketError.ConnectionRefused)
         {
             return true; // Connection refused means the host is alive
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    /// <summary>Returns true only if the port is actually accepting connections.</summary>
+    private static async Task<bool> IsPortOpenAsync(IPAddress ip, int port, CancellationToken cancellationToken)
+    {
+        try
+        {
+            using var client = new TcpClient();
+            using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            cts.CancelAfter(TcpTimeoutMs);
+            await client.ConnectAsync(ip, port, cts.Token);
+            return true;
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
         }
         catch
         {
