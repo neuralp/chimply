@@ -10,7 +10,9 @@ namespace Chimply.ViewModels;
 public partial class MainWindowViewModel : ViewModelBase
 {
     private readonly INetworkScanner _scanner = new NetworkScanner();
+    private readonly HashSet<string> _previouslySeenIps = [];
     private CancellationTokenSource? _cts;
+    private readonly DispatcherTimer _timer;
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(ScanCommand))]
@@ -28,6 +30,17 @@ public partial class MainWindowViewModel : ViewModelBase
 
     public ObservableCollection<ScanResult> Results { get; } = [];
 
+    public MainWindowViewModel()
+    {
+        _timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
+        _timer.Tick += (_, _) =>
+        {
+            foreach (var result in Results)
+                result.UpdateTimeSinceDiscovery();
+        };
+        _timer.Start();
+    }
+
     private bool CanScan() => !IsScanning && !string.IsNullOrWhiteSpace(SubnetInput);
     private bool CanStop() => IsScanning;
 
@@ -43,10 +56,12 @@ public partial class MainWindowViewModel : ViewModelBase
         _cts = new CancellationTokenSource();
 
         // Calculate total hosts for progress bar
+        int totalHosts;
         try
         {
             var addresses = CidrParser.Parse(SubnetInput);
-            ProgressMax = addresses.Count;
+            totalHosts = addresses.Count;
+            ProgressMax = totalHosts;
         }
         catch (FormatException ex)
         {
@@ -55,19 +70,31 @@ public partial class MainWindowViewModel : ViewModelBase
             return;
         }
 
+        var currentScanIps = new HashSet<string>();
         var scannedCount = 0;
         var reportProgress = new Progress<ScanResult>(result =>
         {
             Dispatcher.UIThread.Post(() =>
             {
-                Results.Add(result);
                 scannedCount++;
                 Progress = scannedCount;
 
                 if (result.Status == "Up")
-                    HostsFound++;
+                {
+                    result.DiscoveredAt = DateTime.UtcNow;
+                    result.UpdateTimeSinceDiscovery();
+                    currentScanIps.Add(result.IpAddress);
 
-                StatusText = $"Scanned {scannedCount}/{(int)ProgressMax} hosts...";
+                    if (_previouslySeenIps.Contains(result.IpAddress))
+                        result.Status = "Up";
+                    else
+                        result.Status = "New";
+
+                    Results.Add(result);
+                    HostsFound++;
+                }
+
+                StatusText = $"Scanned {scannedCount}/{totalHosts} hosts...";
             });
         });
 
@@ -90,6 +117,10 @@ public partial class MainWindowViewModel : ViewModelBase
         }
         finally
         {
+            // Remember all IPs seen this scan for next time
+            foreach (var ip in currentScanIps)
+                _previouslySeenIps.Add(ip);
+
             IsScanning = false;
             _cts?.Dispose();
             _cts = null;

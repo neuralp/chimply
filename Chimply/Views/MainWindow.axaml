@@ -68,6 +68,9 @@
                 <DataGridTextColumn Header="MAC Address"
                                     Binding="{Binding MacAddress}"
                                     Width="150" />
+                <DataGridTextColumn Header="First Seen"
+                                    Binding="{Binding TimeSinceDiscovery}"
+                                    Width="110" />
                 <DataGridTemplateColumn Header="Status" Width="80">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
