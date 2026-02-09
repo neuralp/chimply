@@ -2,7 +2,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         x:Class="Chimply.Views.AboutDialog"
         Title="About Chimply"
-        Width="450" Height="260"
+        Width="500" Height="400"
         CanResize="False"
         WindowStartupLocation="CenterOwner">
     <DockPanel Margin="20">
@@ -10,10 +10,100 @@
                 DockPanel.Dock="Bottom"
                 HorizontalAlignment="Right"
                 Click="OnCloseClick" />
-        <TextBlock TextWrapping="Wrap"
-                   VerticalAlignment="Center"
-                   FontSize="14"
-                   LineHeight="22"
-                   Text="This program was written by Claude Code under the direction of Nicholas Pepper.  I wrote this program to scratch an itch in regards to the current open source network scanning applications.  Nothing was modern enough for my taste nor simply scanned modern ports, especially related to audio visual systems.  Thanks for trying this out" />
+        <StackPanel VerticalAlignment="Center" Spacing="16">
+            <!-- Chimp searching the internet logo -->
+            <Viewbox Width="130" Height="130" HorizontalAlignment="Center">
+                <Canvas Width="200" Height="200">
+                    <!-- Background circle -->
+                    <Ellipse Canvas.Left="4" Canvas.Top="4" Width="192" Height="192" Fill="#1E1E2E"/>
+
+                    <!-- Left ear -->
+                    <Ellipse Canvas.Left="16" Canvas.Top="50" Width="44" Height="44" Fill="#5D3A1A"/>
+                    <Ellipse Canvas.Left="24" Canvas.Top="58" Width="28" Height="28" Fill="#D4956A"/>
+                    <!-- Right ear -->
+                    <Ellipse Canvas.Left="140" Canvas.Top="50" Width="44" Height="44" Fill="#5D3A1A"/>
+                    <Ellipse Canvas.Left="148" Canvas.Top="58" Width="28" Height="28" Fill="#D4956A"/>
+
+                    <!-- Head -->
+                    <Ellipse Canvas.Left="45" Canvas.Top="30" Width="110" Height="104" Fill="#6B3F1F"/>
+
+                    <!-- Face / muzzle -->
+                    <Ellipse Canvas.Left="62" Canvas.Top="61" Width="76" Height="68" Fill="#D4956A"/>
+
+                    <!-- Brow ridge -->
+                    <Path Data="M60,70 Q80,58 100,62 Q120,58 140,70"
+                          Stroke="#5D3A1A" StrokeThickness="5" StrokeLineCap="Round"/>
+
+                    <!-- Left eye white -->
+                    <Ellipse Canvas.Left="69" Canvas.Top="68" Width="22" Height="20" Fill="#F5F5F5"/>
+                    <!-- Right eye white -->
+                    <Ellipse Canvas.Left="109" Canvas.Top="68" Width="22" Height="20" Fill="#F5F5F5"/>
+
+                    <!-- Left iris -->
+                    <Ellipse Canvas.Left="77" Canvas.Top="73" Width="12" Height="12" Fill="#3E2723"/>
+                    <!-- Right iris -->
+                    <Ellipse Canvas.Left="117" Canvas.Top="73" Width="12" Height="12" Fill="#3E2723"/>
+
+                    <!-- Left pupil -->
+                    <Ellipse Canvas.Left="81" Canvas.Top="75" Width="6" Height="6" Fill="#111111"/>
+                    <!-- Right pupil -->
+                    <Ellipse Canvas.Left="121" Canvas.Top="75" Width="6" Height="6" Fill="#111111"/>
+
+                    <!-- Left eye highlight -->
+                    <Ellipse Canvas.Left="84.5" Canvas.Top="74.5" Width="3" Height="3" Fill="#FFFFFF"/>
+                    <!-- Right eye highlight -->
+                    <Ellipse Canvas.Left="124.5" Canvas.Top="74.5" Width="3" Height="3" Fill="#FFFFFF"/>
+
+                    <!-- Nose -->
+                    <Ellipse Canvas.Left="88" Canvas.Top="89" Width="24" Height="16" Fill="#4A2A10"/>
+                    <Ellipse Canvas.Left="90.5" Canvas.Top="94" Width="7" Height="6" Fill="#2A1A08"/>
+                    <Ellipse Canvas.Left="102.5" Canvas.Top="94" Width="7" Height="6" Fill="#2A1A08"/>
+
+                    <!-- Mouth -->
+                    <Path Data="M86,110 Q100,120 114,110"
+                          Stroke="#4A2A10" StrokeThickness="2.5" StrokeLineCap="Round"/>
+
+                    <!-- Magnifying glass lens -->
+                    <Ellipse Canvas.Left="118" Canvas.Top="118" Width="60" Height="60"
+                             Fill="#1A237E" Opacity="0.4"
+                             Stroke="#90CAF9" StrokeThickness="5"/>
+
+                    <!-- Network connection lines -->
+                    <Line StartPoint="148,145" EndPoint="135,137" Stroke="#42A5F5" StrokeThickness="1.5" Opacity="0.8"/>
+                    <Line StartPoint="148,145" EndPoint="161,137" Stroke="#42A5F5" StrokeThickness="1.5" Opacity="0.8"/>
+                    <Line StartPoint="148,145" EndPoint="140,158" Stroke="#42A5F5" StrokeThickness="1.5" Opacity="0.8"/>
+                    <Line StartPoint="148,145" EndPoint="158,155" Stroke="#42A5F5" StrokeThickness="1.5" Opacity="0.8"/>
+                    <Line StartPoint="148,145" EndPoint="148,130" Stroke="#42A5F5" StrokeThickness="1.5" Opacity="0.8"/>
+                    <Line StartPoint="135,137" EndPoint="148,130" Stroke="#42A5F5" StrokeThickness="1" Opacity="0.5"/>
+                    <Line StartPoint="161,137" EndPoint="158,155" Stroke="#42A5F5" StrokeThickness="1" Opacity="0.5"/>
+
+                    <!-- Network nodes -->
+                    <Ellipse Canvas.Left="144" Canvas.Top="141" Width="8" Height="8" Fill="#64B5F6"/>
+                    <Ellipse Canvas.Left="132" Canvas.Top="134" Width="6" Height="6" Fill="#42A5F5"/>
+                    <Ellipse Canvas.Left="158" Canvas.Top="134" Width="6" Height="6" Fill="#42A5F5"/>
+                    <Ellipse Canvas.Left="137" Canvas.Top="155" Width="6" Height="6" Fill="#42A5F5"/>
+                    <Ellipse Canvas.Left="155" Canvas.Top="152" Width="6" Height="6" Fill="#42A5F5"/>
+                    <Ellipse Canvas.Left="145.5" Canvas.Top="127.5" Width="5" Height="5" Fill="#2196F3"/>
+
+                    <!-- Magnifying glass handle -->
+                    <Line StartPoint="168,168" EndPoint="188,188" Stroke="#78909C" StrokeThickness="7" StrokeLineCap="Round"/>
+                    <Line StartPoint="168,168" EndPoint="188,188" Stroke="#90A4AE" StrokeThickness="4" StrokeLineCap="Round"/>
+
+                    <!-- Glass reflection -->
+                    <Path Data="M130,135 Q135,128 143,130"
+                          Stroke="#FFFFFF" StrokeThickness="2" StrokeLineCap="Round" Opacity="0.3"/>
+                </Canvas>
+            </Viewbox>
+
+            <TextBlock Text="Chimply"
+                       FontSize="22"
+                       FontWeight="Bold"
+                       HorizontalAlignment="Center" />
+            <TextBlock TextWrapping="Wrap"
+                       FontSize="14"
+                       LineHeight="22"
+                       TextAlignment="Center"
+                       Text="This program was written by Claude Code under the direction of Nicholas Pepper.  I wrote this program to scratch an itch in regards to the current open source network scanning applications.  Nothing was modern enough for my taste nor simply scanned modern ports, especially related to audio visual systems.  Thanks for trying this out" />
+        </StackPanel>
     </DockPanel>
 </Window>

@@ -29,6 +29,9 @@
             <Button Content="Stop"
                     Command="{Binding StopCommand}"
                     VerticalAlignment="Center" />
+            <Button Content="Export CSV"
+                    Click="OnExportCsvClick"
+                    VerticalAlignment="Center" />
             <Border Width="1" Background="#555555" Margin="4,2" />
             <Button Content="Config"
                     Click="OnConfigClick"
