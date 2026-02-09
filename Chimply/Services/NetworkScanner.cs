@@ -83,8 +83,9 @@ public class NetworkScanner : INetworkScanner
                     // Ignore DNS resolution failures
                 }
 
-                // MAC address lookup (best-effort)
+                // MAC address + manufacturer lookup (best-effort)
                 result.MacAddress = MacAddressResolver.Resolve(ip) ?? string.Empty;
+                result.Manufacturer = MacOuiLookup.Lookup(result.MacAddress);
             }
 
             progress.Report(result);

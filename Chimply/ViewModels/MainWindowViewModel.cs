@@ -87,6 +87,7 @@ public partial class MainWindowViewModel : ViewModelBase
                         // Update existing row in-place
                         existing.Hostname = result.Hostname;
                         existing.MacAddress = result.MacAddress;
+                        existing.Manufacturer = result.Manufacturer;
                         existing.RoundTripTime = result.RoundTripTime;
                         existing.OpenPorts = result.OpenPorts;
                         existing.BuildPortEntries();

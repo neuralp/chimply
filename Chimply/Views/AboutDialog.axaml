@@ -1,0 +1,19 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Chimply.Views.AboutDialog"
+        Title="About Chimply"
+        Width="450" Height="260"
+        CanResize="False"
+        WindowStartupLocation="CenterOwner">
+    <DockPanel Margin="20">
+        <Button Content="Close"
+                DockPanel.Dock="Bottom"
+                HorizontalAlignment="Right"
+                Click="OnCloseClick" />
+        <TextBlock TextWrapping="Wrap"
+                   VerticalAlignment="Center"
+                   FontSize="14"
+                   LineHeight="22"
+                   Text="This program was written by Claude Code under the direction of Nicholas Pepper.  I wrote this program to scratch an itch in regards to the current open source network scanning applications.  Nothing was modern enough for my taste nor simply scanned modern ports, especially related to audio visual systems.  Thanks for trying this out" />
+    </DockPanel>
+</Window>

@@ -29,6 +29,13 @@
             <Button Content="Stop"
                     Command="{Binding StopCommand}"
                     VerticalAlignment="Center" />
+            <Border Width="1" Background="#555555" Margin="4,2" />
+            <Button Content="Config"
+                    Click="OnConfigClick"
+                    VerticalAlignment="Center" />
+            <Button Content="About"
+                    Click="OnAboutClick"
+                    VerticalAlignment="Center" />
         </StackPanel>
 
         <!-- Progress bar -->
@@ -71,6 +78,9 @@
                 <DataGridTextColumn Header="MAC Address"
                                     Binding="{Binding MacAddress}"
                                     Width="150" />
+                <DataGridTextColumn Header="Manufacturer"
+                                    Binding="{Binding Manufacturer}"
+                                    Width="130" />
                 <DataGridTemplateColumn Header="Open Ports" Width="150">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate x:DataType="models:ScanResult">

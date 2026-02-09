@@ -1,0 +1,18 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="Chimply.Views.ConfigDialog"
+        Title="Configuration"
+        Width="400" Height="300"
+        CanResize="False"
+        WindowStartupLocation="CenterOwner">
+    <DockPanel Margin="16">
+        <Button Content="Close"
+                DockPanel.Dock="Bottom"
+                HorizontalAlignment="Right"
+                Click="OnCloseClick" />
+        <TextBlock Text="Configuration options will go here."
+                   VerticalAlignment="Center"
+                   HorizontalAlignment="Center"
+                   Foreground="#9E9E9E" />
+    </DockPanel>
+</Window>
