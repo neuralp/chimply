@@ -6,6 +6,7 @@
         x:Class="Chimply.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
         Title="Chimply - Network Scanner"
+        Icon="/Resource/icon.png"
         Width="1000" Height="600"
         MinWidth="800" MinHeight="400">
 
