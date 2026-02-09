@@ -167,4 +167,13 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         _cts?.Cancel();
     }
+
+    [RelayCommand]
+    private void Clear()
+    {
+        Results.Clear();
+        _resultsByIp.Clear();
+        HostsFound = 0;
+        StatusText = "Ready";
+    }
 }

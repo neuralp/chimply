@@ -30,6 +30,9 @@
             <Button Content="Stop"
                     Command="{Binding StopCommand}"
                     VerticalAlignment="Center" />
+            <Button Content="Clear"
+                    Command="{Binding ClearCommand}"
+                    VerticalAlignment="Center" />
             <Button Content="Export CSV"
                     Click="OnExportCsvClick"
                     VerticalAlignment="Center" />
