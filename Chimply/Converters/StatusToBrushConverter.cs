@@ -12,6 +12,7 @@ public class StatusToBrushConverter : IValueConverter
         {
             "Up" => new SolidColorBrush(Color.Parse("#4CAF50")),
             "New" => new SolidColorBrush(Color.Parse("#FFEB3B")),
+            "Upd IP" => new SolidColorBrush(Color.Parse("#FFEB3B")),
             "Down" => new SolidColorBrush(Color.Parse("#F44336")),
             _ => new SolidColorBrush(Color.Parse("#9E9E9E"))
         };

@@ -17,8 +17,11 @@
 - **MAC address resolution** (Windows via SendARP, Linux via /proc/net/arp)
 - **Manufacturer lookup** from IEEE OUI database (~57K entries)
 - **Auto-detect subnet** from the primary network adapter
-- **Persistent results** across scans with New/Up/Down status tracking
-- **Color-coded "First Seen"** timestamps with live updates
+- **CIDR and IP range input** — supports `192.168.1.0/24`, `192.168.1.1-50`, or `192.168.1.1-192.168.1.50`
+- **Persistent results** across scans with New/Up/Down/Upd IP status tracking
+- **IP change detection** — detects when a host changes IP address via MAC tracking
+- **Color-coded "Last Change"** timestamps with live updates
+- **Right-click context menu** to copy IP address, hostname, or MAC address to clipboard
 - **Export CSV** for scan results
 - **Numeric IP sorting** in the DataGrid
 - Dark Fluent theme

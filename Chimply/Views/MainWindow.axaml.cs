@@ -1,8 +1,10 @@
 using System.IO;
 using System.Text;
 using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
+using Chimply.Models;
 using Chimply.ViewModels;
 
 namespace Chimply.Views;
@@ -34,7 +36,7 @@ public partial class MainWindow : Window
             return;
 
         var sb = new StringBuilder();
-        sb.AppendLine("IP Address,Hostname,RTT (ms),MAC Address,Manufacturer,Open Ports,Status,First Seen");
+        sb.AppendLine("IP Address,Hostname,RTT (ms),MAC Address,Manufacturer,Open Ports,Status,Last Change");
 
         foreach (var r in vm.Results)
         {
@@ -60,6 +62,30 @@ public partial class MainWindow : Window
         if (value.Contains(',') || value.Contains('"') || value.Contains('\n'))
             return $"\"{value.Replace("\"", "\"\"")}\"";
         return value;
+    }
+
+    private async void OnCopyIpClick(object? sender, RoutedEventArgs e)
+    {
+        if (HostGrid.SelectedItem is ScanResult result && Clipboard is { } clipboard)
+            await clipboard.SetTextAsync(result.IpAddress);
+    }
+
+    private async void OnCopyHostnameClick(object? sender, RoutedEventArgs e)
+    {
+        if (HostGrid.SelectedItem is ScanResult result && Clipboard is { } clipboard)
+        {
+            var hostname = result.Hostname;
+            var dotIndex = hostname.IndexOf('.');
+            if (dotIndex > 0)
+                hostname = hostname[..dotIndex];
+            await clipboard.SetTextAsync(hostname);
+        }
+    }
+
+    private async void OnCopyMacClick(object? sender, RoutedEventArgs e)
+    {
+        if (HostGrid.SelectedItem is ScanResult result && Clipboard is { } clipboard)
+            await clipboard.SetTextAsync(result.MacAddress);
     }
 
     private async void OnConfigClick(object? sender, RoutedEventArgs e)

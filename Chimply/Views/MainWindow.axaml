@@ -62,7 +62,8 @@
         </DockPanel>
 
         <!-- Center: DataGrid -->
-        <DataGrid ItemsSource="{Binding Results}"
+        <DataGrid x:Name="HostGrid"
+                  ItemsSource="{Binding Results}"
                   IsReadOnly="True"
                   CanUserResizeColumns="True"
                   CanUserSortColumns="True"
@@ -71,6 +72,13 @@
                   BorderThickness="1"
                   BorderBrush="#333333"
                   AutoGenerateColumns="False">
+            <DataGrid.ContextMenu>
+                <ContextMenu>
+                    <MenuItem Header="Copy IP Address" Click="OnCopyIpClick" />
+                    <MenuItem Header="Copy Hostname" Click="OnCopyHostnameClick" />
+                    <MenuItem Header="Copy MAC Address" Click="OnCopyMacClick" />
+                </ContextMenu>
+            </DataGrid.ContextMenu>
             <DataGrid.Columns>
                 <DataGridTextColumn Header="IP Address"
                                     Binding="{Binding IpAddress}"
@@ -114,7 +122,7 @@
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
-                <DataGridTemplateColumn Header="First Seen" SortMemberPath="StatusChangedAt" Width="130">
+                <DataGridTemplateColumn Header="Last Change" SortMemberPath="StatusChangedAt" Width="130">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate x:DataType="models:ScanResult">
                             <TextBlock Text="{Binding TimeSinceDiscovery}"

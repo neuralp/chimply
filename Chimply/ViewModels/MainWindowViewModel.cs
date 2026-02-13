@@ -11,6 +11,7 @@ public partial class MainWindowViewModel : ViewModelBase
 {
     private readonly INetworkScanner _scanner = new NetworkScanner();
     private readonly Dictionary<string, ScanResult> _resultsByIp = new();
+    private readonly Dictionary<string, string> _macToIp = new();
     private readonly DispatcherTimer _timer;
     private CancellationTokenSource? _cts;
 
@@ -82,6 +83,28 @@ public partial class MainWindowViewModel : ViewModelBase
                 {
                     currentScanIps.Add(result.IpAddress);
 
+                    // Detect MAC address moving to a different IP
+                    var ipChanged = false;
+                    if (!string.IsNullOrEmpty(result.MacAddress) &&
+                        _macToIp.TryGetValue(result.MacAddress, out var previousIp) &&
+                        previousIp != result.IpAddress)
+                    {
+                        ipChanged = true;
+                        // Mark the old IP entry as Down
+                        if (_resultsByIp.TryGetValue(previousIp, out var oldEntry))
+                        {
+                            oldEntry.Status = "Down";
+                            oldEntry.RoundTripTime = null;
+                            oldEntry.OpenPorts = [];
+                            oldEntry.BuildPortEntries();
+                            oldEntry.SetTimestamp();
+                        }
+                    }
+
+                    // Track MAC → IP mapping
+                    if (!string.IsNullOrEmpty(result.MacAddress))
+                        _macToIp[result.MacAddress] = result.IpAddress;
+
                     if (_resultsByIp.TryGetValue(result.IpAddress, out var existing))
                     {
                         // Update existing row in-place
@@ -92,24 +115,32 @@ public partial class MainWindowViewModel : ViewModelBase
                         existing.OpenPorts = result.OpenPorts;
                         existing.BuildPortEntries();
 
-                        var previousStatus = existing.Status;
-                        if (previousStatus == "New")
+                        if (ipChanged)
                         {
-                            // New → Up: no timestamp update
-                            existing.Status = "Up";
-                        }
-                        else if (previousStatus == "Down")
-                        {
-                            // Down → Up: update timestamp
-                            existing.Status = "Up";
+                            existing.Status = "Upd IP";
                             existing.SetTimestamp();
                         }
-                        // Up → Up: no change
+                        else
+                        {
+                            var previousStatus = existing.Status;
+                            if (previousStatus == "New")
+                            {
+                                // New → Up: no timestamp update
+                                existing.Status = "Up";
+                            }
+                            else if (previousStatus == "Down")
+                            {
+                                // Down → Up: update timestamp
+                                existing.Status = "Up";
+                                existing.SetTimestamp();
+                            }
+                            // Up → Up: no change
+                        }
                     }
                     else
                     {
                         // First time seeing this host
-                        result.Status = "New";
+                        result.Status = ipChanged ? "Upd IP" : "New";
                         result.SetTimestamp();
                         result.BuildPortEntries();
                         Results.Add(result);
@@ -130,7 +161,7 @@ public partial class MainWindowViewModel : ViewModelBase
             // Mark hosts not seen in this scan as Down
             foreach (var entry in _resultsByIp.Values)
             {
-                if (!currentScanIps.Contains(entry.IpAddress) && entry.Status is "Up" or "New")
+                if (!currentScanIps.Contains(entry.IpAddress) && entry.Status is "Up" or "New" or "Upd IP")
                 {
                     entry.Status = "Down";
                     entry.RoundTripTime = null;
@@ -173,6 +204,7 @@ public partial class MainWindowViewModel : ViewModelBase
     {
         Results.Clear();
         _resultsByIp.Clear();
+        _macToIp.Clear();
         HostsFound = 0;
         StatusText = "Ready";
     }
