@@ -30,20 +30,20 @@ public static class CidrParser
         var startUint = BitConverter.ToUInt32(startBytes, 0);
 
         uint endUint;
-        if (IPAddress.TryParse(endStr, out var endAddress))
+        if (!endStr.Contains('.') && uint.TryParse(endStr, out var lastOctet))
+        {
+            // Short range: 192.168.1.1-50
+            if (lastOctet > 255)
+                throw new FormatException($"Invalid end octet: {endStr}");
+            endUint = (startUint & 0xFFFFFF00) | lastOctet;
+        }
+        else if (IPAddress.TryParse(endStr, out var endAddress))
         {
             // Full IP range: 192.168.1.1-192.168.1.50
             var endBytes = endAddress.GetAddressBytes();
             if (BitConverter.IsLittleEndian)
                 Array.Reverse(endBytes);
             endUint = BitConverter.ToUInt32(endBytes, 0);
-        }
-        else if (uint.TryParse(endStr, out var lastOctet))
-        {
-            // Short range: 192.168.1.1-50
-            if (lastOctet > 255)
-                throw new FormatException($"Invalid end octet: {endStr}");
-            endUint = (startUint & 0xFFFFFF00) | lastOctet;
         }
         else
         {

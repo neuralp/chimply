@@ -14,6 +14,7 @@ public partial class MainWindowViewModel : ViewModelBase
     private readonly Dictionary<string, string> _macToIp = new();
     private readonly DispatcherTimer _timer;
     private CancellationTokenSource? _cts;
+    private ScanHistoryEntry? _activeEntry;
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(ScanCommand))]
@@ -30,6 +31,7 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty] private int _hostsFound;
 
     public ObservableCollection<ScanResult> Results { get; } = [];
+    public ObservableCollection<ScanHistoryEntry> ScanHistory { get; } = [];
 
     public MainWindowViewModel()
     {
@@ -69,6 +71,32 @@ public partial class MainWindowViewModel : ViewModelBase
             IsScanning = false;
             return;
         }
+
+        var subnet = SubnetInput.Trim();
+
+        // Switching subnets: snapshot current results into the previous entry and reset
+        if (_activeEntry != null && _activeEntry.Subnet != subnet)
+        {
+            _activeEntry.Hosts = Results.ToList();
+            Results.Clear();
+            _resultsByIp.Clear();
+            _macToIp.Clear();
+        }
+
+        // Find or create the history entry for this subnet (most-recent first)
+        var historyEntry = ScanHistory.FirstOrDefault(e => e.Subnet == subnet);
+        if (historyEntry != null)
+        {
+            var idx = ScanHistory.IndexOf(historyEntry);
+            if (idx > 0)
+                ScanHistory.Move(idx, 0);
+        }
+        else
+        {
+            historyEntry = new ScanHistoryEntry { Subnet = subnet };
+            ScanHistory.Insert(0, historyEntry);
+        }
+        _activeEntry = historyEntry;
 
         var currentScanIps = new HashSet<string>();
         var scannedCount = 0;
@@ -171,10 +199,12 @@ public partial class MainWindowViewModel : ViewModelBase
                 }
             }
 
+            _activeEntry.Hosts = Results.ToList();
             StatusText = $"Scan complete. {HostsFound} host(s) up.";
         }
         catch (OperationCanceledException)
         {
+            _activeEntry.Hosts = Results.ToList();
             StatusText = $"Scan cancelled. {HostsFound} host(s) found so far.";
         }
         catch (FormatException ex)
@@ -191,6 +221,28 @@ public partial class MainWindowViewModel : ViewModelBase
             _cts?.Dispose();
             _cts = null;
         }
+    }
+
+    public void RestoreHistoryEntry(ScanHistoryEntry entry)
+    {
+        SubnetInput = entry.Subnet;
+        Results.Clear();
+        _resultsByIp.Clear();
+        _macToIp.Clear();
+
+        foreach (var host in entry.Hosts)
+        {
+            Results.Add(host);
+            _resultsByIp[host.IpAddress] = host;
+            if (!string.IsNullOrEmpty(host.MacAddress))
+                _macToIp[host.MacAddress] = host.IpAddress;
+        }
+
+        _activeEntry = entry;
+        HostsFound = entry.Hosts.Count(h => h.Status is "Up" or "New" or "Upd IP");
+        StatusText = entry.Hosts.Count > 0
+            ? $"Restored {entry.Hosts.Count} host(s) from history."
+            : "Ready";
     }
 
     [RelayCommand(CanExecute = nameof(CanStop))]

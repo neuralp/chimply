@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.IO;
 using System.Text;
 using Avalonia.Controls;
@@ -11,9 +12,27 @@ namespace Chimply.Views;
 
 public partial class MainWindow : Window
 {
+    private MainWindowViewModel? _vm;
+
     public MainWindow()
     {
         InitializeComponent();
+        DataContextChanged += OnDataContextChanged;
+    }
+
+    private void OnDataContextChanged(object? sender, EventArgs e)
+    {
+        if (_vm != null)
+            _vm.PropertyChanged -= OnViewModelPropertyChanged;
+        _vm = DataContext as MainWindowViewModel;
+        if (_vm != null)
+            _vm.PropertyChanged += OnViewModelPropertyChanged;
+    }
+
+    private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(MainWindowViewModel.IsScanning) && _vm?.IsScanning == true)
+            SubnetBox.IsDropDownOpen = false;
     }
 
     private async void OnExportCsvClick(object? sender, RoutedEventArgs e)
@@ -86,6 +105,21 @@ public partial class MainWindow : Window
     {
         if (HostGrid.SelectedItem is ScanResult result && Clipboard is { } clipboard)
             await clipboard.SetTextAsync(result.MacAddress);
+    }
+
+    private void OnSubnetHistoryClick(object? sender, RoutedEventArgs e)
+    {
+        SubnetBox.IsDropDownOpen = true;
+    }
+
+    private void OnSubnetSelectionChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        if (e.AddedItems.Count > 0
+            && e.AddedItems[0] is ScanHistoryEntry entry
+            && DataContext is MainWindowViewModel vm)
+        {
+            vm.RestoreHistoryEntry(entry);
+        }
     }
 
     private async void OnConfigClick(object? sender, RoutedEventArgs e)
