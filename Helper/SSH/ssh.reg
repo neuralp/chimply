@@ -1,0 +1,8 @@
+Windows Registry Editor Version 5.00
+
+[HKEY_CLASSES_ROOT\ssh]
+@="URL:SSH Protocol"
+"URL Protocol"=""
+
+[HKEY_CLASSES_ROOT\ssh\shell\open\command]
+@="\"C:\\Windows\\System32\\OpenSSH\\ssh-helper.bat\" \"%1\""
