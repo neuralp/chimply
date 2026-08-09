@@ -8,7 +8,7 @@
         Title="Chimply - Network Scanner"
         Icon="/Resource/icon.png"
         Width="1100" Height="700"
-        MinWidth="800" MinHeight="400">
+        MinWidth="1100" MinHeight="400">
 
     <Window.Resources>
         <converters:StatusToBrushConverter x:Key="StatusToBrush" />
@@ -16,69 +16,113 @@
     </Window.Resources>
 
     <DockPanel Margin="10">
-        <!-- Top bar: Subnet input + buttons -->
-        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="8" Margin="0,0,0,8">
-            <TextBlock Text="Subnet:" VerticalAlignment="Center" />
-            <Border BorderBrush="{DynamicResource TextControlBorderBrush}"
-                    BorderThickness="1"
-                    CornerRadius="4"
-                    VerticalAlignment="Center">
-                <Grid ColumnDefinitions="*,Auto">
-                    <AutoCompleteBox x:Name="SubnetBox"
-                                     Text="{Binding SubnetInput}"
-                                     SelectionChanged="OnSubnetSelectionChanged"
-                                     ItemsSource="{Binding ScanHistory}"
-                                     FilterMode="None"
-                                     MinimumPrefixLength="0"
-                                     MinimumPopulateDelay="0"
-                                     Watermark="e.g. 192.168.1.0/24"
-                                     Width="230"
-                                     VerticalAlignment="Center">
-                        <AutoCompleteBox.Styles>
-                            <Style Selector="TextBox">
-                                <Setter Property="BorderThickness" Value="0" />
-                                <Setter Property="CornerRadius" Value="4,0,0,4" />
-                            </Style>
-                        </AutoCompleteBox.Styles>
-                    </AutoCompleteBox>
-                    <Button Grid.Column="1"
-                            Content="▾"
-                            Click="OnSubnetHistoryClick"
-                            VerticalAlignment="Stretch"
-                            Padding="8,4"
-                            CornerRadius="0,4,4,0"
-                            BorderThickness="1,0,0,0"
-                            ToolTip.Tip="Show scan history" />
-                </Grid>
-            </Border>
-            <Button Content="Scan"
-                    Command="{Binding ScanCommand}"
-                    HotKey="Enter"
-                    VerticalAlignment="Center" />
-            <Button Content="Stop"
-                    Command="{Binding StopCommand}"
-                    VerticalAlignment="Center" />
-            <Button Content="Clear"
-                    Command="{Binding ClearCommand}"
-                    VerticalAlignment="Center" />
-            <Button Content="Export CSV"
-                    Click="OnExportCsvClick"
-                    VerticalAlignment="Center" />
-            <Border Width="1" Background="#555555" Margin="4,2" />
-            <Button Content="Config"
-                    Click="OnConfigClick"
-                    VerticalAlignment="Center" />
-            <Button Content="About"
-                    Click="OnAboutClick"
-                    VerticalAlignment="Center" />
-        </StackPanel>
+        <!-- Top bar: Subnet input + buttons on the left, results filter on the right -->
+        <DockPanel DockPanel.Dock="Top" Margin="0,0,0,8">
+            <StackPanel DockPanel.Dock="Left" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                <TextBlock Text="Subnet:" VerticalAlignment="Center" />
+                <Border BorderBrush="{DynamicResource TextControlBorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="4"
+                        VerticalAlignment="Center">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <AutoCompleteBox x:Name="SubnetBox"
+                                         Text="{Binding SubnetInput}"
+                                         SelectionChanged="OnSubnetSelectionChanged"
+                                         KeyDown="OnSubnetKeyDown"
+                                         ItemsSource="{Binding ScanHistory}"
+                                         FilterMode="None"
+                                         MinimumPrefixLength="0"
+                                         MinimumPopulateDelay="0"
+                                         Watermark="e.g. 192.168.1.0/24"
+                                         Width="280"
+                                         VerticalAlignment="Center">
+                            <!-- The popup shows "eth0 - 192.168.1.0/24"; selecting a row fills the
+                                 TextBox from ToString(), which is the bare subnet. -->
+                            <AutoCompleteBox.ItemTemplate>
+                                <DataTemplate x:DataType="models:ScanHistoryEntry">
+                                    <TextBlock Text="{Binding Display}" TextTrimming="CharacterEllipsis" />
+                                </DataTemplate>
+                            </AutoCompleteBox.ItemTemplate>
+                            <AutoCompleteBox.Styles>
+                                <Style Selector="TextBox">
+                                    <Setter Property="BorderThickness" Value="0" />
+                                    <Setter Property="CornerRadius" Value="4,0,0,4" />
+                                </Style>
+                            </AutoCompleteBox.Styles>
+                        </AutoCompleteBox>
+                        <Button Grid.Column="1"
+                                Content="▾"
+                                Click="OnSubnetHistoryClick"
+                                VerticalAlignment="Stretch"
+                                Padding="8,4"
+                                CornerRadius="0,4,4,0"
+                                BorderThickness="1,0,0,0"
+                                ToolTip.Tip="Show scan history" />
+                    </Grid>
+                </Border>
+                <!-- Enter-to-scan lives on the subnet box, not as a window-wide HotKey: a HotKey
+                     is evaluated before the focused control sees the key, so it would fire while
+                     the user is typing in the filter box. -->
+                <Button Content="Scan"
+                        Command="{Binding ScanCommand}"
+                        VerticalAlignment="Center" />
+                <Button Content="Stop"
+                        Command="{Binding StopCommand}"
+                        VerticalAlignment="Center" />
+                <Button Content="Clear"
+                        Command="{Binding ClearCommand}"
+                        VerticalAlignment="Center" />
+                <Button Content="Export CSV"
+                        Click="OnExportCsvClick"
+                        VerticalAlignment="Center" />
+                <Border Width="1" Background="#555555" Margin="4,2" />
+                <Button Content="Config"
+                        Click="OnConfigClick"
+                        VerticalAlignment="Center" />
+                <Button Content="About"
+                        Click="OnAboutClick"
+                        VerticalAlignment="Center" />
+            </StackPanel>
+
+            <!-- Results filter: fills the remaining width so it squeezes before the buttons clip -->
+            <StackPanel Orientation="Horizontal" Spacing="8"
+                        HorizontalAlignment="Right" VerticalAlignment="Center"
+                        Margin="8,0,0,0">
+                <TextBlock Text="Filter:" VerticalAlignment="Center" />
+                <TextBox x:Name="FilterBox"
+                         Text="{Binding FilterText}"
+                         KeyDown="OnFilterKeyDown"
+                         Watermark="Filter results"
+                         Width="200"
+                         VerticalAlignment="Center">
+                    <TextBox.InnerRightContent>
+                        <Button Content="✕"
+                                Command="{Binding ClearFilterCommand}"
+                                IsVisible="{Binding FilterText, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"
+                                Background="Transparent"
+                                BorderThickness="0"
+                                Padding="4,0"
+                                Margin="0,0,4,0"
+                                FontSize="11"
+                                Cursor="Hand"
+                                ToolTip.Tip="Clear filter" />
+                    </TextBox.InnerRightContent>
+                </TextBox>
+            </StackPanel>
+        </DockPanel>
 
         <!-- Bottom bar: status text + hosts found -->
         <DockPanel DockPanel.Dock="Bottom" Margin="0,8,0,0">
-            <TextBlock Text="{Binding StatusText}" VerticalAlignment="Center" />
-            <TextBlock Text="{Binding HostsFound, StringFormat='Hosts found: {0}'}"
-                       HorizontalAlignment="Right"
+            <TextBlock DockPanel.Dock="Right"
+                       Text="{Binding HostsFound, StringFormat='Hosts found: {0}'}"
                        VerticalAlignment="Center" />
+            <TextBlock DockPanel.Dock="Right"
+                       Text="{Binding FilterSummary}"
+                       IsVisible="{Binding IsFiltering}"
+                       Foreground="#FFB74D"
+                       Margin="0,0,16,0"
+                       VerticalAlignment="Center" />
+            <TextBlock Text="{Binding StatusText}" VerticalAlignment="Center" />
         </DockPanel>
 
         <!-- Progress bar -->
@@ -91,7 +135,7 @@
 
         <!-- Center: DataGrid -->
         <DataGrid x:Name="HostGrid"
-                  ItemsSource="{Binding Results}"
+                  ItemsSource="{Binding ResultsView}"
                   IsReadOnly="True"
                   CanUserResizeColumns="True"
                   CanUserSortColumns="True"
@@ -108,21 +152,22 @@
                 </ContextMenu>
             </DataGrid.ContextMenu>
             <DataGrid.Columns>
+                <!-- ResultsView is a non-generic IEnumerable, so each binding names its row type. -->
                 <DataGridTextColumn Header="IP Address"
-                                    Binding="{Binding IpAddress}"
+                                    Binding="{Binding IpAddress, x:DataType=models:ScanResult}"
                                     CustomSortComparer="{x:Static converters:IpAddressComparer.Instance}"
                                     Width="150" />
                 <DataGridTextColumn Header="Hostname"
-                                    Binding="{Binding Hostname}"
+                                    Binding="{Binding Hostname, x:DataType=models:ScanResult}"
                                     Width="200" />
                 <DataGridTextColumn Header="RTT (ms)"
-                                    Binding="{Binding RoundTripTime}"
+                                    Binding="{Binding RoundTripTime, x:DataType=models:ScanResult}"
                                     Width="80" />
                 <DataGridTextColumn Header="MAC Address"
-                                    Binding="{Binding MacAddress}"
+                                    Binding="{Binding MacAddress, x:DataType=models:ScanResult}"
                                     Width="150" />
                 <DataGridTextColumn Header="Manufacturer"
-                                    Binding="{Binding Manufacturer}"
+                                    Binding="{Binding Manufacturer, x:DataType=models:ScanResult}"
                                     Width="130" />
                 <DataGridTemplateColumn Header="Open Ports" SortMemberPath="OpenPorts.Count" Width="150">
                     <DataGridTemplateColumn.CellTemplate>
@@ -162,7 +207,7 @@
                 </DataGridTemplateColumn>
                 <DataGridTemplateColumn Header="Status" SortMemberPath="Status" Width="80">
                     <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate>
+                        <DataTemplate x:DataType="models:ScanResult">
                             <TextBlock Text="{Binding Status}"
                                        Foreground="{Binding Status, Converter={StaticResource StatusToBrush}}"
                                        VerticalAlignment="Center"

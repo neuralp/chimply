@@ -37,7 +37,12 @@ public partial class MainWindow : Window
 
     private async void OnExportCsvClick(object? sender, RoutedEventArgs e)
     {
-        if (DataContext is not MainWindowViewModel vm || vm.Results.Count == 0)
+        if (DataContext is not MainWindowViewModel vm)
+            return;
+
+        // Export what the grid is showing: the view applies the filter and the current sort.
+        var rows = vm.ResultsView.Cast<ScanResult>().ToList();
+        if (rows.Count == 0)
             return;
 
         var file = await StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
@@ -57,7 +62,7 @@ public partial class MainWindow : Window
         var sb = new StringBuilder();
         sb.AppendLine("IP Address,Hostname,RTT (ms),MAC Address,Manufacturer,Open Ports,Status,Last Change");
 
-        foreach (var r in vm.Results)
+        foreach (var r in rows)
         {
             sb.Append(CsvField(r.IpAddress)).Append(',');
             sb.Append(CsvField(r.Hostname)).Append(',');
@@ -105,6 +110,28 @@ public partial class MainWindow : Window
     {
         if (HostGrid.SelectedItem is ScanResult result && Clipboard is { } clipboard)
             await clipboard.SetTextAsync(result.MacAddress);
+    }
+
+    private void OnSubnetKeyDown(object? sender, KeyEventArgs e)
+    {
+        // Enter starts a scan only from the subnet box. When the history popup is open the
+        // AutoCompleteBox handles Enter itself to commit the selection, so we never see it.
+        if (e.Key != Key.Enter || DataContext is not MainWindowViewModel vm)
+            return;
+
+        SubnetBox.IsDropDownOpen = false;
+        if (vm.ScanCommand.CanExecute(null))
+            vm.ScanCommand.Execute(null);
+        e.Handled = true;
+    }
+
+    private void OnFilterKeyDown(object? sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Escape && DataContext is MainWindowViewModel vm)
+        {
+            vm.FilterText = string.Empty;
+            e.Handled = true;
+        }
     }
 
     private void OnSubnetHistoryClick(object? sender, RoutedEventArgs e)

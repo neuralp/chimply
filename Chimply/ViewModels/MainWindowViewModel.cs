@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using Avalonia.Collections;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -18,7 +19,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(ScanCommand))]
-    private string _subnetInput = SubnetDetector.DetectLocalSubnet() ?? "192.168.1.0/24";
+    private string _subnetInput = "192.168.1.0/24";
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(ScanCommand))]
@@ -30,11 +31,29 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty] private string _statusText = "Ready";
     [ObservableProperty] private int _hostsFound;
 
+    [ObservableProperty] private string _filterText = string.Empty;
+    [ObservableProperty] private bool _isFiltering;
+    [ObservableProperty] private string _filterSummary = string.Empty;
+
     public ObservableCollection<ScanResult> Results { get; } = [];
     public ObservableCollection<ScanHistoryEntry> ScanHistory { get; } = [];
 
+    /// <summary>
+    /// What the DataGrid binds to. Wrapping <see cref="Results"/> keeps one source of truth while
+    /// giving the grid row filtering, which DataGrid has no support for on its own.
+    /// </summary>
+    public DataGridCollectionView ResultsView { get; }
+
     public MainWindowViewModel()
     {
+        ResultsView = new DataGridCollectionView(Results)
+        {
+            Filter = o => ResultFilter.Matches((ScanResult)o, FilterText)
+        };
+        Results.CollectionChanged += (_, _) => UpdateFilterSummary();
+
+        SeedInterfaceSubnets();
+
         _timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(30) };
         _timer.Tick += (_, _) =>
         {
@@ -42,6 +61,43 @@ public partial class MainWindowViewModel : ViewModelBase
                 result.UpdateTimeDisplay();
         };
         _timer.Start();
+    }
+
+    /// <summary>
+    /// Pre-populates the dropdown with one entry per local interface. These are ordinary history
+    /// entries that happen to start with no hosts, so scanning one behaves exactly like scanning a
+    /// hand-typed subnet.
+    /// </summary>
+    private void SeedInterfaceSubnets()
+    {
+        foreach (var iface in SubnetDetector.DetectLocalSubnets())
+            ScanHistory.Add(new ScanHistoryEntry
+            {
+                Subnet = iface.Cidr,
+                InterfaceName = iface.InterfaceName
+            });
+
+        if (ScanHistory.Count > 0)
+            SubnetInput = ScanHistory[0].Subnet;
+    }
+
+    partial void OnFilterTextChanged(string value) => RefreshFilter();
+
+    [RelayCommand]
+    private void ClearFilter() => FilterText = string.Empty;
+
+    private void RefreshFilter()
+    {
+        ResultsView.Refresh();
+        UpdateFilterSummary();
+    }
+
+    private void UpdateFilterSummary()
+    {
+        IsFiltering = !string.IsNullOrWhiteSpace(FilterText);
+        FilterSummary = IsFiltering
+            ? $"Showing {ResultsView.Count} of {Results.Count} hosts"
+            : string.Empty;
     }
 
     private bool CanScan() => !IsScanning && !string.IsNullOrWhiteSpace(SubnetInput);
@@ -201,11 +257,16 @@ public partial class MainWindowViewModel : ViewModelBase
 
             _activeEntry.Hosts = Results.ToList();
             StatusText = $"Scan complete. {HostsFound} host(s) up.";
+
+            // Rows updated in place above may have gained or lost matching text, and OpenPorts
+            // raises no change notification, so nothing else would re-evaluate them.
+            RefreshFilter();
         }
         catch (OperationCanceledException)
         {
             _activeEntry.Hosts = Results.ToList();
             StatusText = $"Scan cancelled. {HostsFound} host(s) found so far.";
+            RefreshFilter();
         }
         catch (FormatException ex)
         {
