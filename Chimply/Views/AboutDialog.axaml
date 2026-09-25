@@ -3,7 +3,7 @@
         x:Class="Chimply.Views.AboutDialog"
         Title="About Chimply"
         Icon="/Resource/icon.png"
-        Width="500" Height="400"
+        Width="500" Height="420"
         CanResize="False"
         WindowStartupLocation="CenterOwner">
     <DockPanel Margin="20">
@@ -99,6 +99,11 @@
             <TextBlock Text="Chimply"
                        FontSize="22"
                        FontWeight="Bold"
+                       HorizontalAlignment="Center" />
+            <TextBlock x:Name="VersionText"
+                       FontSize="12"
+                       Opacity="0.7"
+                       Margin="0,-12,0,0"
                        HorizontalAlignment="Center" />
             <TextBlock TextWrapping="Wrap"
                        FontSize="14"
